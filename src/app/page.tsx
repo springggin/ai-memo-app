@@ -26,15 +26,25 @@ export default function Home() {
   const [viewingMemo, setViewingMemo] = useState<Memo | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const handleCreateMemo = (formData: MemoFormData) => {
-    createMemo(formData)
-    setIsFormOpen(false)
+  const handleCreateMemo = async (formData: MemoFormData) => {
+    try {
+      await createMemo(formData)
+      setIsFormOpen(false)
+    } catch (error) {
+      console.error('Failed to create memo:', error)
+      window.alert('메모 생성에 실패했습니다.')
+    }
   }
 
-  const handleUpdateMemo = (formData: MemoFormData) => {
-    if (editingMemo) {
-      updateMemo(editingMemo.id, formData)
+  const handleUpdateMemo = async (formData: MemoFormData) => {
+    if (!editingMemo) return
+    try {
+      await updateMemo(editingMemo.id, formData)
       setEditingMemo(null)
+      setIsFormOpen(false)
+    } catch (error) {
+      console.error('Failed to update memo:', error)
+      window.alert('메모 수정에 실패했습니다.')
     }
   }
 
@@ -60,6 +70,15 @@ export default function Home() {
 
   const handleEditFromModal = (memo: Memo) => {
     handleEditMemo(memo)
+  }
+
+  const handleDeleteMemo = async (id: string) => {
+    try {
+      await deleteMemo(id)
+    } catch (error) {
+      console.error('Failed to delete memo:', error)
+      window.alert('메모 삭제에 실패했습니다.')
+    }
   }
 
   return (
@@ -109,7 +128,7 @@ export default function Home() {
           onSearchChange={searchMemos}
           onCategoryChange={filterByCategory}
           onEditMemo={handleEditMemo}
-          onDeleteMemo={deleteMemo}
+          onDeleteMemo={handleDeleteMemo}
           onViewMemo={handleViewMemo}
           stats={stats}
         />
@@ -129,7 +148,7 @@ export default function Home() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onEdit={handleEditFromModal}
-        onDelete={deleteMemo}
+        onDelete={handleDeleteMemo}
       />
     </div>
   )

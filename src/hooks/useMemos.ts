@@ -1,68 +1,54 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { v4 as uuidv4 } from 'uuid'
 import { Memo, MemoFormData } from '@/types/memo'
-import { localStorageUtils } from '@/utils/localStorage'
-import { seedSampleData } from '@/utils/seedData'
+import { memoService } from '@/utils/memoService'
 
 export const useMemos = () => {
   const [memos, setMemos] = useState<Memo[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
 
   // 메모 로드
   useEffect(() => {
-    setLoading(true)
-    try {
-      // 샘플 데이터 시딩 (기존 데이터가 없을 때만)
-      seedSampleData()
-      const loadedMemos = localStorageUtils.getMemos()
-      setMemos(loadedMemos)
-    } catch (error) {
-      console.error('Failed to load memos:', error)
-    } finally {
-      setLoading(false)
+    const loadMemos = async () => {
+      setLoading(true)
+      try {
+        const loadedMemos = await memoService.getMemos()
+        setMemos(loadedMemos)
+        setError(null)
+      } catch (err) {
+        console.error('Failed to load memos:', err)
+        setError('메모를 불러오는 중 오류가 발생했습니다.')
+      } finally {
+        setLoading(false)
+      }
     }
+
+    loadMemos()
   }, [])
 
   // 메모 생성
-  const createMemo = useCallback((formData: MemoFormData): Memo => {
-    const newMemo: Memo = {
-      id: uuidv4(),
-      ...formData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    localStorageUtils.addMemo(newMemo)
+  const createMemo = useCallback(async (formData: MemoFormData): Promise<Memo> => {
+    const newMemo = await memoService.createMemo(formData)
     setMemos(prev => [newMemo, ...prev])
-
     return newMemo
   }, [])
 
   // 메모 업데이트
   const updateMemo = useCallback(
-    (id: string, formData: MemoFormData): void => {
-      const existingMemo = memos.find(memo => memo.id === id)
-      if (!existingMemo) return
-
-      const updatedMemo: Memo = {
-        ...existingMemo,
-        ...formData,
-        updatedAt: new Date().toISOString(),
-      }
-
-      localStorageUtils.updateMemo(updatedMemo)
+    async (id: string, formData: MemoFormData): Promise<void> => {
+      const updatedMemo = await memoService.updateMemo(id, formData)
       setMemos(prev => prev.map(memo => (memo.id === id ? updatedMemo : memo)))
     },
-    [memos]
+    []
   )
 
   // 메모 삭제
-  const deleteMemo = useCallback((id: string): void => {
-    localStorageUtils.deleteMemo(id)
+  const deleteMemo = useCallback(async (id: string): Promise<void> => {
+    await memoService.deleteMemo(id)
     setMemos(prev => prev.filter(memo => memo.id !== id))
   }, [])
 
@@ -107,14 +93,6 @@ export const useMemos = () => {
     return filtered
   }, [memos, selectedCategory, searchQuery])
 
-  // 모든 메모 삭제
-  const clearAllMemos = useCallback((): void => {
-    localStorageUtils.clearMemos()
-    setMemos([])
-    setSearchQuery('')
-    setSelectedCategory('all')
-  }, [])
-
   // 통계 정보
   const stats = useMemo(() => {
     const totalMemos = memos.length
@@ -138,6 +116,7 @@ export const useMemos = () => {
     memos: filteredMemos,
     allMemos: memos,
     loading,
+    error,
     searchQuery,
     selectedCategory,
     stats,
@@ -151,8 +130,5 @@ export const useMemos = () => {
     // 필터링 & 검색
     searchMemos,
     filterByCategory,
-
-    // 유틸리티
-    clearAllMemos,
   }
 }

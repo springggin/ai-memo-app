@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 
-메모 CRUD 기능을 제공하는 Next.js 웹 애플리케이션. 브라우저 LocalStorage를 사용하여 데이터를 영속화하며, 카테고리 분류 및 검색 기능을 지원한다.
+메모 CRUD 기능을 제공하는 Next.js 웹 애플리케이션. Supabase(Postgres) DB를 사용하여 데이터를 영속화하며, 카테고리 분류 및 검색 기능을 지원한다.
 
 ## Tech Stack
 
@@ -10,7 +10,7 @@
 - **Language:** TypeScript 5.x (strict mode)
 - **UI:** React 19.1.0 + Tailwind CSS 4.x
 - **State:** Client-side state (useState, useCallback, useMemo)
-- **Persistence:** Browser LocalStorage
+- **Persistence:** Supabase (Postgres) — `memos` 테이블, `@supabase/supabase-js`
 - **Testing:** Playwright (E2E)
 - **Linting:** ESLint + Prettier
 
@@ -44,9 +44,10 @@ npm run test:ui
 ### Immutable (절대 위반 금지)
 
 1. `'use client'` 지시문이 필요한 컴포넌트에서 반드시 명시할 것
-2. LocalStorage 접근 시 SSR 환경 체크 (`typeof window === 'undefined'`) 필수
-3. 메모 ID 생성은 uuid v4만 사용
+2. Supabase 접근은 `@/utils/memoService` 통해서만 (컴포넌트/훅에서 `supabase` 클라이언트 직접 호출 금지)
+3. 메모 ID는 DB(`gen_random_uuid()`)가 생성하며 클라이언트에서 임의로 생성하지 않음
 4. TypeScript strict mode 위반 금지
+5. Supabase 접속 정보(`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`)는 `.env.local`에만 두고 커밋 금지
 
 ### Do's (권장 사항)
 

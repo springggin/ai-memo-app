@@ -7,9 +7,7 @@
 ## 의존성 관계
 
 - `@/types/memo` — Memo, MemoFormData 타입
-- `@/utils/localStorage` — LocalStorage 유틸리티
-- `@/utils/seedData` — 초기 샘플 데이터
-- `uuid` — ID 생성
+- `@/utils/memoService` — Supabase 기반 메모 CRUD
 
 ## 훅 목록
 
@@ -25,24 +23,24 @@ const {
   memos,              // 필터링된 메모 배열
   allMemos,           // 전체 메모 배열
   loading,            // 로딩 상태
+  error,              // 에러 메시지 (string | null)
   searchQuery,        // 현재 검색어
   selectedCategory,   // 선택된 카테고리
   stats,              // 통계 (total, byCategory, filtered)
 
-  // CRUD
-  createMemo,         // (formData) => Memo
-  updateMemo,         // (id, formData) => void
-  deleteMemo,         // (id) => void
+  // CRUD (Supabase 비동기 호출, 실패 시 throw)
+  createMemo,         // (formData) => Promise<Memo>
+  updateMemo,         // (id, formData) => Promise<void>
+  deleteMemo,         // (id) => Promise<void>
   getMemoById,        // (id) => Memo | undefined
 
   // 필터링
   searchMemos,        // (query) => void
   filterByCategory,   // (category) => void
-
-  // 유틸리티
-  clearAllMemos,      // () => void
 } = useMemos()
 ```
+
+CRUD 함수는 Supabase 호출 실패 시 에러를 throw하므로, 호출부(주로 `page.tsx`)에서 try-catch로 감싸 사용자에게 알려야 한다.
 
 ## Implementation Patterns
 
@@ -95,8 +93,8 @@ export const useCustomHook = (initialValue?: SomeType) => {
 ### Do's
 
 - 훅 이름은 `use` 접두사 필수
-- LocalStorage 접근은 `localStorageUtils` 통해서만
-- 에러 처리: try-catch로 감싸고 console.error 로깅
+- Supabase 접근은 `memoService` 통해서만
+- 에러 처리: try-catch로 감싸고 console.error 로깅 후 필요 시 재throw
 - 로딩 상태 항상 제공
 
 ### Don'ts

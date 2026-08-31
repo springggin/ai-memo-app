@@ -6,30 +6,32 @@
 
 ## 의존성 관계
 
-- `@/types/memo` — Memo 타입
+- `@/types/memo` — Memo, MemoFormData 타입
+- `@supabase/supabase-js` — Supabase 클라이언트
 
 ## 유틸리티 목록
 
 | 파일 | 역할 |
 |------|------|
-| `localStorage.ts` | LocalStorage CRUD 래퍼 |
-| `seedData.ts` | 초기 샘플 데이터 시딩 |
+| `supabase.ts` | Supabase 클라이언트 인스턴스 생성 |
+| `memoService.ts` | Supabase `memos` 테이블 CRUD 래퍼 |
 
-## localStorage.ts 구조
+## supabase.ts 구조
+
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` 환경 변수로 클라이언트를 생성해 `supabase` 인스턴스를 export한다.
+
+## memoService.ts 구조
 
 ```typescript
-const localStorageUtils = {
-  getMemos(): Memo[]              // 전체 메모 조회
-  saveMemos(memos): void          // 전체 메모 저장
-  addMemo(memo): void             // 메모 추가
-  updateMemo(memo): void          // 메모 수정
-  deleteMemo(id): void            // 메모 삭제
-  searchMemos(query): Memo[]      // 메모 검색
-  getMemosByCategory(cat): Memo[] // 카테고리 필터
-  getMemoById(id): Memo | null    // 단건 조회
-  clearMemos(): void              // 전체 삭제
+const memoService = {
+  getMemos(): Promise<Memo[]>                          // 전체 메모 조회 (최신순)
+  createMemo(formData): Promise<Memo>                  // 메모 생성
+  updateMemo(id, formData): Promise<Memo>              // 메모 수정
+  deleteMemo(id): Promise<void>                        // 메모 삭제
 }
 ```
+
+DB row(snake_case: `created_at`, `updated_at`)와 앱 내부 `Memo` 타입(camelCase) 간 매핑은 `memoService.ts` 내부의 `rowToMemo`가 전담한다.
 
 ## Implementation Patterns
 
@@ -78,28 +80,26 @@ export const utilName = {
 ### Do's
 
 - 모든 유틸리티는 순수 함수로 작성 (사이드 이펙트 최소화)
-- SSR 환경 체크는 함수 최상단에서 수행
-- 에러 발생 시 적절한 기본값 반환
-- JSON 파싱/직렬화 시 try-catch 필수
+- Supabase 호출은 항상 `memoService`를 통해서만 수행
+- 에러는 호출부(훅)로 throw하여 상위에서 처리하도록 위임
+- 비동기 함수는 async/await로 작성
 
 ### Don'ts
 
 - React 훅 사용 금지 (유틸리티는 훅이 아님)
 - 전역 상태 변경 금지
-- 직접 DOM 조작 금지 (React에 위임)
-- 비동기 함수에서 에러 무시 금지
+- 컴포넌트/훅에서 `supabase` 클라이언트 직접 호출 금지 (`memoService` 경유)
+- 비동기 함수에서 에러 무시 금지 (catch 후 반드시 재throw 또는 로깅)
 
-## LocalStorage 키 관리
+## Supabase 스키마
 
-현재 사용 중인 키:
-- `memo-app-memos` — 메모 데이터 저장
-
-새 키 추가 시:
-- 접두사 `memo-app-` 사용
-- 상수로 정의하여 중앙 관리
+`memos` 테이블 (스키마 정의: `supabase/schema.sql`):
+- `id` (uuid, PK), `title`, `content`, `category`, `tags` (text[])
+- `created_at`, `updated_at` (timestamptz)
+- RLS 활성화, 로그인 기능이 없으므로 anon 키에 대해 public CRUD 정책 적용
 
 ## 테스트 고려사항
 
 유틸리티 함수는 단위 테스트하기 용이함:
 - 순수 함수는 입력 -> 출력 테스트
-- LocalStorage 의존 함수는 모킹 필요
+- `memoService`는 Supabase 클라이언트 모킹 필요
