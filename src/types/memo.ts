@@ -6,6 +6,7 @@ export interface Memo {
   tags: string[]
   createdAt: string
   updatedAt: string
+  summary?: string
 }
 
 export interface MemoFormData {

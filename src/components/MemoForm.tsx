@@ -7,6 +7,7 @@ import {
   MEMO_CATEGORIES,
   DEFAULT_CATEGORIES,
 } from '@/types/memo'
+import MarkdownContent from './MarkdownContent'
 
 interface MemoFormProps {
   isOpen: boolean
@@ -28,6 +29,7 @@ export default function MemoForm({
     tags: [],
   })
   const [tagInput, setTagInput] = useState('')
+  const [contentTab, setContentTab] = useState<'write' | 'preview'>('write')
 
   // 편집 모드일 때 폼 데이터 설정
   useEffect(() => {
@@ -47,6 +49,7 @@ export default function MemoForm({
       })
     }
     setTagInput('')
+    setContentTab('write')
   }, [editingMemo, isOpen])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -170,26 +173,65 @@ export default function MemoForm({
 
             {/* 내용 */}
             <div>
-              <label
-                htmlFor="content"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                내용 *
-              </label>
-              <textarea
-                id="content"
-                value={formData.content}
-                onChange={e =>
-                  setFormData(prev => ({
-                    ...prev,
-                    content: e.target.value,
-                  }))
-                }
-                className="placeholder-gray-400 text-gray-400 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                placeholder="메모 내용을 입력하세요"
-                rows={8}
-                required
-              />
+              <div className="flex items-center justify-between mb-2">
+                <label
+                  htmlFor="content"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  내용 * <span className="text-gray-400 font-normal">(마크다운 지원)</span>
+                </label>
+                <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                  <button
+                    type="button"
+                    onClick={() => setContentTab('write')}
+                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                      contentTab === 'write'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    작성
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setContentTab('preview')}
+                    className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                      contentTab === 'preview'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    미리보기
+                  </button>
+                </div>
+              </div>
+
+              {contentTab === 'write' ? (
+                <textarea
+                  id="content"
+                  value={formData.content}
+                  onChange={e =>
+                    setFormData(prev => ({
+                      ...prev,
+                      content: e.target.value,
+                    }))
+                  }
+                  className="placeholder-gray-400 text-gray-400 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none font-mono text-sm"
+                  placeholder="메모 내용을 입력하세요 (# 제목, **굵게**, - 목록, ``` 코드 등 마크다운 문법 사용 가능)"
+                  rows={8}
+                  required
+                />
+              ) : (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg min-h-[13.5rem]">
+                  {formData.content.trim() ? (
+                    <MarkdownContent content={formData.content} />
+                  ) : (
+                    <p className="text-gray-400 text-sm">
+                      내용을 입력하면 미리보기가 표시됩니다.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* 태그 */}

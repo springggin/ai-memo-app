@@ -2,6 +2,7 @@
 
 import { Memo, MEMO_CATEGORIES } from '@/types/memo'
 import { useEffect } from 'react'
+import MarkdownContent from './MarkdownContent'
 
 interface MemoModalProps {
   memo: Memo | null
@@ -117,11 +118,7 @@ export default function MemoModal({
 
         {/* 내용 */}
         <div className="px-6 py-6">
-          <div className="prose prose-sm max-w-none">
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {memo.content}
-            </p>
-          </div>
+          <MarkdownContent content={memo.content} />
 
           {/* 태그 */}
           {memo.tags.length > 0 && (

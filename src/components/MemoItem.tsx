@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { Memo, MEMO_CATEGORIES } from '@/types/memo'
+import { summarizationService } from '@/utils/summarizationService'
 
 interface MemoItemProps {
   memo: Memo
@@ -10,6 +12,32 @@ interface MemoItemProps {
 }
 
 export default function MemoItem({ memo, onEdit, onDelete, onView }: MemoItemProps) {
+  const [summary, setSummary] = useState<string | null>(memo.summary || null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showSummary, setShowSummary] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSummarize = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (summary) {
+      setShowSummary(!showSummary)
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const result = await summarizationService.summarizeMemo(memo.title, memo.content)
+      setSummary(result)
+      setShowSummary(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '요약 생성에 실패했습니다.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('ko-KR', {
@@ -31,6 +59,15 @@ export default function MemoItem({ memo, onEdit, onDelete, onView }: MemoItemPro
     }
     return colors[category as keyof typeof colors] || colors.other
   }
+
+  const stripMarkdown = (text: string) =>
+    text
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/[*_~`>]/g, '')
+      .replace(/^[-+]\s+/gm, '')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .trim()
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer group">
@@ -55,6 +92,32 @@ export default function MemoItem({ memo, onEdit, onDelete, onView }: MemoItemPro
 
         {/* 액션 버튼 */}
         <div className="flex gap-2 ml-4">
+          <button
+            onClick={handleSummarize}
+            disabled={isLoading}
+            className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors disabled:opacity-50"
+            title="요약"
+          >
+            {isLoading ? (
+              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            ) : (
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            )}
+          </button>
           <button
             onClick={() => onEdit(memo)}
             className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -103,9 +166,38 @@ export default function MemoItem({ memo, onEdit, onDelete, onView }: MemoItemPro
       {/* 내용 */}
       <div className="mb-4 cursor-pointer" onClick={() => onView(memo)}>
         <p className="text-gray-700 text-sm leading-relaxed line-clamp-3 group-hover:text-gray-900 transition-colors">
-          {memo.content}
+          {stripMarkdown(memo.content)}
         </p>
       </div>
+
+      {/* 요약 */}
+      {showSummary && summary && (
+        <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <span className="text-xs font-medium text-purple-700">AI 요약</span>
+            <button
+              onClick={handleSummarize}
+              className="text-purple-500 hover:text-purple-700"
+              title="닫기"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-gray-700 text-sm leading-relaxed">
+            {summary}
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 text-sm">
+            요약 생성 실패: {error}
+          </p>
+        </div>
+      )}
 
       {/* 태그 */}
       {memo.tags.length > 0 && (
