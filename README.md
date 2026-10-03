@@ -2,7 +2,7 @@
 
 **핸즈온 실습용 Next.js 메모 애플리케이션**
 
-LocalStorage 기반의 완전한 CRUD 기능을 갖춘 메모 앱으로, MCP 연동 및 GitHub PR 생성 실습의 기반이 되는 프로젝트입니다.
+Supabase(Postgres) 기반의 완전한 CRUD 기능을 갖춘 메모 앱으로, MCP 연동 및 GitHub PR 생성 실습의 기반이 되는 프로젝트입니다.
 
 ## 🚀 주요 기능
 
@@ -11,7 +11,7 @@ LocalStorage 기반의 완전한 CRUD 기능을 갖춘 메모 앱으로, MCP 연
 - 🏷️ 태그 시스템으로 메모 태깅
 - 🔍 제목, 내용, 태그 기반 실시간 검색
 - 📱 반응형 디자인 (모바일, 태블릿, 데스크톱)
-- 💾 LocalStorage 기반 데이터 저장 (오프라인 지원)
+- 💾 Supabase(Postgres) 기반 데이터 저장
 - 🎨 모던한 UI/UX with Tailwind CSS
 
 ## 🛠 기술 스택
@@ -19,7 +19,7 @@ LocalStorage 기반의 완전한 CRUD 기능을 갖춘 메모 앱으로, MCP 연
 - **Framework**: Next.js 15.4.4 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
-- **Storage**: LocalStorage
+- **Storage**: Supabase (Postgres)
 - **State Management**: React Hooks (useState, useEffect, useMemo)
 - **Package Manager**: npm
 
@@ -31,13 +31,26 @@ LocalStorage 기반의 완전한 CRUD 기능을 갖춘 메모 앱으로, MCP 연
 npm install
 ```
 
-### 2. 개발 서버 실행
+### 2. Supabase 설정
+
+1. 프로젝트 루트에 `.env.local` 파일을 만들고 접속 정보를 입력합니다 (커밋 금지).
+
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+   ANTHROPIC_API_KEY=<api-key>  # AI 요약 기능용
+   ```
+
+2. Supabase SQL Editor에서 `supabase/schema.sql`을 실행해 `memos` 테이블을 만듭니다.
+3. 샘플 메모가 필요하면 `supabase/seed.sql`을 실행합니다.
+
+### 3. 개발 서버 실행
 
 ```bash
 npm run dev
 ```
 
-### 3. 브라우저 접속
+### 4. 브라우저 접속
 
 ```
 http://localhost:3000
@@ -61,8 +74,11 @@ memo-app/
 │   ├── types/
 │   │   └── memo.ts              # 메모 타입 정의
 │   └── utils/
-│       ├── localStorage.ts      # LocalStorage 유틸리티
-│       └── seedData.ts          # 샘플 데이터 시딩
+│       ├── supabase.ts          # Supabase 클라이언트
+│       └── memoService.ts       # 메모 CRUD (Supabase)
+├── supabase/
+│   ├── schema.sql               # memos 테이블 및 RLS 정책
+│   └── seed.sql                 # 샘플 메모 6개
 └── README.md                    # 프로젝트 문서
 ```
 
@@ -129,7 +145,7 @@ interface Memo {
 
 ## 🎨 샘플 데이터
 
-앱 첫 실행 시 6개의 샘플 메모가 자동으로 생성됩니다:
+`supabase/seed.sql`을 Supabase SQL Editor에서 실행하면 6개의 샘플 메모가 등록됩니다 (`schema.sql` 실행 후, 같은 제목의 메모가 이미 있으면 건너뜀):
 
 - 프로젝트 회의 준비 (업무)
 - React 18 새로운 기능 학습 (학습)
@@ -156,19 +172,16 @@ const {
 } = useMemos()
 ```
 
-### LocalStorage 직접 조작
+### memoService 직접 사용
 
 ```typescript
-import { localStorageUtils } from '@/utils/localStorage'
+import { memoService } from '@/utils/memoService'
 
 // 모든 메모 가져오기
-const memos = localStorageUtils.getMemos()
+const memos = await memoService.getMemos()
 
-// 메모 추가
-localStorageUtils.addMemo(newMemo)
-
-// 메모 검색
-const results = localStorageUtils.searchMemos('React')
+// 메모 추가 (ID는 DB가 생성)
+const memo = await memoService.createMemo(formData)
 ```
 
 ## 🚀 배포
