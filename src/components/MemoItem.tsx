@@ -185,7 +185,7 @@ export default function MemoItem({ memo, onEdit, onDelete, onView }: MemoItemPro
               </svg>
             </button>
           </div>
-          <p className="text-gray-700 text-sm leading-relaxed">
+          <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
             {summary}
           </p>
         </div>
