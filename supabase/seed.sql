@@ -1,5 +1,5 @@
 -- 샘플 메모 6개 (기존 LocalStorage 버전의 seedData.ts에서 이전)
--- memos 테이블이 비어 있을 때만 삽입하므로 여러 번 실행해도 중복되지 않음
+-- 같은 제목의 메모가 이미 있으면 건너뛰므로 여러 번 실행해도 중복되지 않음
 insert into memos (title, content, category, tags, created_at, updated_at)
 select title, content, category, tags, created_at, updated_at
 from (
@@ -53,4 +53,4 @@ from (
       now() - interval '12 days'
     )
 ) as seed (title, content, category, tags, created_at, updated_at)
-where not exists (select 1 from memos);
+where not exists (select 1 from memos m where m.title = seed.title);

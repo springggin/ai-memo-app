@@ -145,7 +145,7 @@ interface Memo {
 
 ## 🎨 샘플 데이터
 
-`supabase/seed.sql`을 Supabase SQL Editor에서 실행하면 6개의 샘플 메모가 등록됩니다 (`schema.sql` 실행 후, `memos` 테이블이 비어 있을 때만 삽입):
+`supabase/seed.sql`을 Supabase SQL Editor에서 실행하면 6개의 샘플 메모가 등록됩니다 (`schema.sql` 실행 후, 같은 제목의 메모가 이미 있으면 건너뜀):
 
 - 프로젝트 회의 준비 (업무)
 - React 18 새로운 기능 학습 (학습)
